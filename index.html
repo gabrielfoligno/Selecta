@@ -929,18 +929,17 @@ function triggerReveals(){
 }
 
 // ===== AUTH STATE LISTENER =====
+let dashboardStarted=false;
+
 sbClient.auth.onAuthStateChange(async(event,session)=>{
-  console.log('Auth event:',event,'Session:',!!session);
-  if(event==='SIGNED_IN' || event==='TOKEN_REFRESHED' || event==='INITIAL_SESSION'){
-    if(session?.user){
-      currentUser=session.user;
-      // Wait a tick for SDK to fully set the token internally
+  console.log('Auth event:',event);
+  
+  if(session?.user){
+    currentUser=session.user;
+    
+    if(!dashboardStarted){
+      dashboardStarted=true;
       await new Promise(r=>setTimeout(r,100));
-      
-      // Verify token is set
-      const{data:check}=await sbClient.auth.getSession();
-      console.log('Token verified:',!!check?.session?.access_token);
-      
       $('authScreen').classList.add('hidden');
       await loadJobsFromDB();
       startDashboard();
@@ -948,18 +947,12 @@ sbClient.auth.onAuthStateChange(async(event,session)=>{
   }else if(event==='SIGNED_OUT'){
     currentUser=null;
     jobs=[];
+    dashboardStarted=false;
     $('authScreen').classList.remove('hidden');
+    $('app').classList.remove('on');
+    $('loader').style.display='none';
   }
 });
-
-// Check existing session on load
-(async()=>{
-  const{data:{session}}=await sbClient.auth.getSession();
-  if(!session){
-    // No session — show auth screen (already visible by default)
-    console.log('No existing session');
-  }
-})();
 </script>
 </body>
 </html>
