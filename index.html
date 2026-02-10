@@ -654,6 +654,12 @@ async function loadJobsFromDB(){
 }
 
 async function insertJob(jobData){
+  // Debug: check session
+  const{data:sessionData}=await sbClient.auth.getSession();
+  console.log('Session:',sessionData?.session?'EXISTS':'NULL');
+  console.log('User ID:',currentUser?.id);
+  console.log('Access token:',sessionData?.session?.access_token?.substring(0,20)+'...');
+
   const{data,error}=await sbClient
     .from('jobs')
     .insert({
