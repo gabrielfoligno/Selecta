@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Selecta — Gestão Privada</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-const SUPABASE_URL  = 'https://bhfikpttxeswsgzdbqva.supabase.co';   // ← sua URL aqui
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoZmlrcHR0eGVzd3NnemRicXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MzU4NDYsImV4cCI6MjA4NjMxMTg0Nn0.c7C3WukHUnE5tuK9RiWnwwgtISecwzK9z4eAPSI6Pbc';                  // ← sua anon key aqui
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg-deep: #09090B;
@@ -558,10 +555,10 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 // ║  🔑 SUPABASE CONFIG — Substitua pelos seus valores          ║
 // ║  Encontre em: Supabase Dashboard → Settings → API           ║
 // ╚══════════════════════════════════════════════════════════════╝
-const SUPABASE_URL  = 'https://SEU-PROJETO.supabase.co';   // ← sua URL aqui
-const SUPABASE_ANON = 'sua-anon-key-aqui';                  // ← sua anon key aqui
+const SUPABASE_URL  = 'https://bhfikpttxeswsgzdbqva.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoZmlrcHR0eGVzd3NnemRicXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MzU4NDYsImV4cCI6MjA4NjMxMTg0Nn0.c7C3WukHUnE5tuK9RiWnwwgtISecwzK9z4eAPSI6Pbc';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ===== STATE =====
 const aC=['#C9A96E','#6E6D69','#A8A7A3','#787572','#E06C75','#5DD39E','#D4AF37','#EDEDEC'];
@@ -597,9 +594,9 @@ async function handleAuth(){
   try{
     let result;
     if(authMode==='login'){
-      result=await supabase.auth.signInWithPassword({email,password:pass});
+      result=await sbClient.auth.signInWithPassword({email,password:pass});
     }else{
-      result=await supabase.auth.signUp({email,password:pass});
+      result=await sbClient.auth.signUp({email,password:pass});
     }
 
     if(result.error) throw result.error;
@@ -622,7 +619,7 @@ async function handleAuth(){
 }
 
 async function handleLogout(){
-  await supabase.auth.signOut();
+  await sbClient.auth.signOut();
   jobs=[];
   currentUser=null;
   $('authScreen').classList.remove('hidden');
@@ -638,7 +635,7 @@ document.addEventListener('keydown',e=>{
 // ===== SUPABASE DATA =====
 async function loadJobsFromDB(){
   if(!currentUser)return;
-  const{data,error}=await supabase
+  const{data,error}=await sbClient
     .from('jobs')
     .select('*')
     .eq('user_id',currentUser.id)
@@ -657,7 +654,7 @@ async function loadJobsFromDB(){
 }
 
 async function insertJob(jobData){
-  const{data,error}=await supabase
+  const{data,error}=await sbClient
     .from('jobs')
     .insert({
       user_id: currentUser.id,
@@ -674,7 +671,7 @@ async function insertJob(jobData){
 }
 
 async function updateJobInDB(id,updates){
-  const{error}=await supabase
+  const{error}=await sbClient
     .from('jobs')
     .update(updates)
     .eq('id',id)
@@ -683,7 +680,7 @@ async function updateJobInDB(id,updates){
 }
 
 async function deleteJobFromDB(id){
-  const{error}=await supabase
+  const{error}=await sbClient
     .from('jobs')
     .delete()
     .eq('id',id)
@@ -914,7 +911,7 @@ function triggerReveals(){
 }
 
 // ===== AUTH STATE LISTENER =====
-supabase.auth.onAuthStateChange(async(event,session)=>{
+sbClient.auth.onAuthStateChange(async(event,session)=>{
   if(session?.user){
     currentUser=session.user;
     $('authScreen').classList.add('hidden');
@@ -928,7 +925,7 @@ supabase.auth.onAuthStateChange(async(event,session)=>{
 
 // Check existing session on load
 (async()=>{
-  const{data:{session}}=await supabase.auth.getSession();
+  const{data:{session}}=await sbClient.auth.getSession();
   if(!session){
     // No session — show auth screen (already visible by default)
   }
