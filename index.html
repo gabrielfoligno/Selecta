@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Selecta — Gestão Privada</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
 <style>
   :root {
     --bg-deep: #09090B;
@@ -558,7 +558,13 @@
 const SUPABASE_URL  = 'https://bhfikpttxeswsgzdbqva.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoZmlrcHR0eGVzd3NnemRicXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MzU4NDYsImV4cCI6MjA4NjMxMTg0Nn0.c7C3WukHUnE5tuK9RiWnwwgtISecwzK9z4eAPSI6Pbc';
 
-const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+});
 
 // ===== STATE =====
 const aC=['#C9A96E','#6E6D69','#A8A7A3','#787572','#E06C75','#5DD39E','#D4AF37','#EDEDEC'];
@@ -654,11 +660,17 @@ async function loadJobsFromDB(){
 }
 
 async function insertJob(jobData){
-  // Debug: check session
+  // Ensure session is fresh
   const{data:sessionData}=await sbClient.auth.getSession();
-  console.log('Session:',sessionData?.session?'EXISTS':'NULL');
-  console.log('User ID:',currentUser?.id);
-  console.log('Access token:',sessionData?.session?.access_token?.substring(0,20)+'...');
+  const session=sessionData?.session;
+  console.log('Session exists:',!!session);
+  console.log('Token preview:',session?.access_token?.substring(0,30));
+
+  if(!session){
+    showToast('delete','Sessão expirada. Faça login novamente.');
+    handleLogout();
+    return null;
+  }
 
   const{data,error}=await sbClient
     .from('jobs')
