@@ -569,7 +569,7 @@ const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
 // ===== STATE =====
 const aC=['#C9A96E','#6E6D69','#A8A7A3','#787572','#E06C75','#5DD39E','#D4AF37','#EDEDEC'];
 let jobs=[];
-let curF='all',editId=null,cfmCb=null,currentUser=null;
+let curF='all',editId=null,cfmCb=null,currentUser=null,currentSession=null;
 
 const $=s=>document.getElementById(s);
 const fmt=v=>'R$ '+v.toLocaleString('pt-BR');
@@ -638,71 +638,66 @@ document.addEventListener('keydown',e=>{
   if(!$('authScreen').classList.contains('hidden')&&e.key==='Enter')handleAuth();
 });
 
-// ===== SUPABASE DATA =====
+// ===== SUPABASE DATA (Direct fetch with auth header) =====
+function sbHeaders(){
+  return {
+    'apikey': SUPABASE_ANON,
+    'Authorization': 'Bearer '+(currentSession?.access_token||SUPABASE_ANON),
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+}
+
 async function loadJobsFromDB(){
   if(!currentUser)return;
-  const{data,error}=await sbClient
-    .from('jobs')
-    .select('*')
-    .eq('user_id',currentUser.id)
-    .order('date',{ascending:false});
-  if(error){console.error('Load error:',error);return}
-  // Map DB columns to front-end format
-  jobs=(data||[]).map(j=>({
-    id:j.id,
-    date:j.date,
-    client:j.client,
-    cpf:j.cpf||'',
-    amount:j.amount,
-    nf:j.nf
-  }));
-  renderAll();
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/jobs?user_id=eq.'+currentUser.id+'&order=date.desc',{headers:sbHeaders()});
+    if(!res.ok){console.error('Load error:',res.status);return}
+    const data=await res.json();
+    jobs=(data||[]).map(j=>({id:j.id,date:j.date,client:j.client,cpf:j.cpf||'',amount:j.amount,nf:j.nf}));
+    renderAll();
+  }catch(e){console.error('Load error:',e)}
 }
 
 async function insertJob(jobData){
-  const{data:sessionData}=await sbClient.auth.getSession();
-  const session=sessionData?.session;
-  console.log('INSERT - Session exists:',!!session);
-  console.log('INSERT - User ID:',currentUser?.id);
-
-  if(!session){
-    console.error('No session found during insert');
-    showToast('delete','Sessão não encontrada. Tente recarregar.');
-    return null;
-  }
-
-  const{data,error}=await sbClient
-    .from('jobs')
-    .insert({
-      user_id: currentUser.id,
-      date: jobData.date,
-      client: jobData.client,
-      cpf: jobData.cpf,
-      amount: jobData.amount,
-      nf: jobData.nf
-    })
-    .select()
-    .single();
-  if(error){console.error('Insert error:',JSON.stringify(error));showToast('delete','Erro: '+error.message);return null}
-  return data;
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/jobs',{
+      method:'POST',
+      headers:sbHeaders(),
+      body:JSON.stringify({
+        user_id:currentUser.id,
+        date:jobData.date,
+        client:jobData.client,
+        cpf:jobData.cpf,
+        amount:jobData.amount,
+        nf:jobData.nf
+      })
+    });
+    if(!res.ok){const err=await res.json();console.error('Insert error:',err);showToast('delete','Erro: '+(err.message||res.status));return null}
+    const data=await res.json();
+    return data[0]||data;
+  }catch(e){console.error('Insert error:',e);showToast('delete','Erro de conexão');return null}
 }
 
 async function updateJobInDB(id,updates){
-  const{error}=await sbClient
-    .from('jobs')
-    .update(updates)
-    .eq('id',id)
-    .eq('user_id',currentUser.id);
-  if(error){console.error('Update error:',JSON.stringify(error));showToast('delete','Erro: '+error.message)}
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/jobs?id=eq.'+id+'&user_id=eq.'+currentUser.id,{
+      method:'PATCH',
+      headers:sbHeaders(),
+      body:JSON.stringify(updates)
+    });
+    if(!res.ok){const err=await res.json();console.error('Update error:',err);showToast('delete','Erro: '+(err.message||res.status))}
+  }catch(e){console.error('Update error:',e);showToast('delete','Erro de conexão')}
 }
 
 async function deleteJobFromDB(id){
-  const{error}=await sbClient
-    .from('jobs')
-    .delete()
-    .eq('id',id)
-    .eq('user_id',currentUser.id);
-  if(error){console.error('Delete error:',JSON.stringify(error));showToast('delete','Erro: '+error.message)}
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/jobs?id=eq.'+id+'&user_id=eq.'+currentUser.id,{
+      method:'DELETE',
+      headers:{...sbHeaders(),'Prefer':''}
+    });
+    if(!res.ok){const err=await res.json();console.error('Delete error:',err);showToast('delete','Erro: '+(err.message||res.status))}
+  }catch(e){console.error('Delete error:',e);showToast('delete','Erro de conexão')}
 }
 
 // ===== THEME =====
@@ -931,20 +926,21 @@ function triggerReveals(){
 let dashboardStarted=false;
 
 sbClient.auth.onAuthStateChange(async(event,session)=>{
-  console.log('Auth event:',event);
+  console.log('Auth event:',event,'Has session:',!!session);
   
   if(session?.user){
     currentUser=session.user;
+    currentSession=session;
     
     if(!dashboardStarted){
       dashboardStarted=true;
-      await new Promise(r=>setTimeout(r,100));
       $('authScreen').classList.add('hidden');
       await loadJobsFromDB();
       startDashboard();
     }
   }else if(event==='SIGNED_OUT'){
     currentUser=null;
+    currentSession=null;
     jobs=[];
     dashboardStarted=false;
     $('authScreen').classList.remove('hidden');
