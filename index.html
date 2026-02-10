@@ -666,7 +666,7 @@ async function insertJob(jobData){
     })
     .select()
     .single();
-  if(error){console.error('Insert error:',error);showToast('delete','Erro ao salvar');return null}
+  if(error){console.error('Insert error:',JSON.stringify(error));showToast('delete','Erro: '+error.message);return null}
   return data;
 }
 
@@ -676,7 +676,7 @@ async function updateJobInDB(id,updates){
     .update(updates)
     .eq('id',id)
     .eq('user_id',currentUser.id);
-  if(error){console.error('Update error:',error);showToast('delete','Erro ao atualizar')}
+  if(error){console.error('Update error:',JSON.stringify(error));showToast('delete','Erro: '+error.message)}
 }
 
 async function deleteJobFromDB(id){
@@ -685,7 +685,7 @@ async function deleteJobFromDB(id){
     .delete()
     .eq('id',id)
     .eq('user_id',currentUser.id);
-  if(error){console.error('Delete error:',error);showToast('delete','Erro ao excluir')}
+  if(error){console.error('Delete error:',JSON.stringify(error));showToast('delete','Erro: '+error.message)}
 }
 
 // ===== THEME =====
