@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Selecta — Gestão Privada</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+const SUPABASE_URL  = 'https://bhfikpttxeswsgzdbqva.supabase.co';   // ← sua URL aqui
+const SUPABASE_ANON = 'sb_publishable_uz4rBnfPqeqrAq6pjOVmiw_s_2X2MEf';                  // ← sua anon key aqui
+</script>
 <style>
   :root {
     --bg-deep: #09090B;
@@ -66,13 +70,7 @@
   .light .btn-sec{background:var(--bg-elevated);border-color:var(--border);color:var(--text-200)}
   .light .btn-sec:hover{color:var(--text-100);border-color:var(--border-light)}
 
-  /* Sidebar */
-  .light .sidebar{background:var(--bg-base);border-color:var(--border)}
   .light .logo{color:var(--champagne)}
-  .light .nav-item:hover{background:rgba(0,0,0,0.03)}
-  .light .nav-item.active{background:var(--bg-card);border-color:var(--border-light);box-shadow:var(--shadow-card)}
-  .light .panic-side:hover{background:rgba(0,0,0,0.03);border-color:var(--border)}
-  .light .panic-side.on{background:var(--bg-elevated);border-color:var(--border-light)}
 
   /* Hero */
   .light .hero::before{background:radial-gradient(circle,rgba(140,106,42,.03) 0%,transparent 70%)}
@@ -134,6 +132,29 @@
   body{font-family:var(--font);background:var(--bg-deep);color:var(--text-100);min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
   body::after{content:'';position:fixed;inset:0;opacity:.015;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:9999}
 
+  /* ===== AUTH SCREEN ===== */
+  #authScreen{position:fixed;inset:0;z-index:10001;background:var(--bg-deep);display:flex;align-items:center;justify-content:center;transition:opacity .5s var(--ease-out),visibility .5s}
+  #authScreen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+  .auth-box{width:100%;max-width:380px;padding:0 24px}
+  .auth-logo{font-size:28px;font-weight:600;letter-spacing:-2px;color:var(--text-100);text-align:center;margin-bottom:6px}
+  .auth-sub{font-size:13px;color:var(--text-300);text-align:center;margin-bottom:36px}
+  .auth-form{display:flex;flex-direction:column;gap:14px}
+  .auth-input{width:100%;padding:13px 16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--r-sm);color:var(--text-100);font-family:var(--font);font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
+  .auth-input:focus{border-color:var(--champagne-border);box-shadow:0 0 0 3px var(--champagne-soft)}
+  .auth-input::placeholder{color:var(--text-400)}
+  .auth-btn{width:100%;padding:13px;background:var(--text-100);color:var(--bg-deep);font-family:var(--font);font-size:14px;font-weight:600;border:none;border-radius:var(--r-sm);cursor:pointer;transition:all .2s;margin-top:4px}
+  .auth-btn:hover{opacity:.9;transform:translateY(-1px)}
+  .auth-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .auth-toggle{font-size:13px;color:var(--text-300);text-align:center;margin-top:20px}
+  .auth-toggle a{color:var(--champagne);cursor:pointer;text-decoration:none;font-weight:500}
+  .auth-toggle a:hover{text-decoration:underline}
+  .auth-error{font-size:12px;color:var(--red);text-align:center;min-height:18px;margin-top:4px}
+  .auth-divider{display:flex;align-items:center;gap:12px;margin:4px 0}
+  .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+  .auth-divider span{font-size:11px;color:var(--text-400);text-transform:uppercase;letter-spacing:.05em}
+  .auth-logout{font-size:12px;color:var(--text-300);cursor:pointer;border:none;background:none;font-family:var(--font);padding:4px 0;transition:color .2s}
+  .auth-logout:hover{color:var(--text-100)}
+
   /* ===== LOADER ===== */
   #loader{position:fixed;inset:0;z-index:10000;background:var(--bg-deep);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s var(--ease-out),visibility .5s}
   #loader.done{opacity:0;visibility:hidden;pointer-events:none}
@@ -154,29 +175,11 @@
   @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
   /* ===== LAYOUT ===== */
-  .app{display:flex;min-height:100dvh;opacity:0;transition:opacity .4s}
+  .app{display:flex;flex-direction:column;min-height:100dvh;opacity:0;transition:opacity .4s}
   .app.on{opacity:1}
 
-  /* ===== SIDEBAR ===== */
-  .sidebar{width:250px;background:var(--bg-base);border-right:1px solid var(--border);padding:28px 16px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex-shrink:0;z-index:50}
-  .logo{font-size:22px;font-weight:600;letter-spacing:-2px;color:var(--champagne);padding:0 14px;margin-bottom:36px;display:flex;align-items:center;gap:10px}
-  .logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--champagne),var(--gold));border-radius:8px;display:flex;align-items:center;justify-content:center}
-  .logo-icon svg{width:16px;height:16px;color:var(--bg-deep)}
-  .nav-label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-400);padding:0 14px;margin-bottom:10px;margin-top:24px}
-  .nav-label:first-of-type{margin-top:0}
-  .nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:var(--r-sm);color:var(--text-300);font-size:13.5px;cursor:pointer;transition:all .2s;border:1px solid transparent;margin-bottom:2px}
-  .nav-item:hover{color:var(--text-200);background:rgba(255,255,255,.03)}
-  .nav-item.active{color:var(--text-100);background:var(--bg-card);border-color:var(--border-light);font-weight:500}
-  .nav-item.active .ni{color:var(--champagne);opacity:1}
-  .ni{width:20px;height:20px;opacity:.5;flex-shrink:0}
-  .nav-spacer{flex:1}
-  .panic-side{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--r-sm);color:var(--text-400);font-size:12.5px;cursor:pointer;transition:all .25s;border:1px solid transparent;background:none;font-family:var(--font);width:100%}
-  .panic-side:hover{color:var(--text-200);background:rgba(255,255,255,.03);border-color:var(--border)}
-  .panic-side.on{color:var(--text-100);background:var(--bg-elevated);border-color:var(--border-light)}
-  .panic-side svg{width:18px;height:18px}
-
   /* ===== MAIN ===== */
-  .main{flex:1;padding:32px 40px;max-width:960px}
+  .main{flex:1;padding:32px 40px;max-width:960px;margin:0 auto;width:100%}
   .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px}
   .brand h1{font-size:30px;font-weight:600;letter-spacing:-2px;color:var(--text-100)}
   .btn-w{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:var(--text-100);color:var(--bg-deep);font-family:var(--font);font-size:13px;font-weight:600;border:none;border-radius:var(--r-sm);cursor:pointer;transition:all .25s var(--ease-out)}
@@ -369,7 +372,6 @@
 
   /* ===== RESPONSIVE ===== */
   @media(max-width:900px){
-    .sidebar{display:none}
     .main{padding:20px 16px 32px}
     .brand h1{font-size:24px}
     .hero{padding:22px 20px;border-radius:var(--r-lg)}
@@ -404,32 +406,34 @@
 </head>
 <body>
 
-<div id="loader">
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div class="auth-box">
+    <div class="auth-logo">Selecta</div>
+    <div class="auth-sub">Gestão Privada</div>
+    <div class="auth-form" id="authForm">
+      <input class="auth-input" type="email" id="authEmail" placeholder="E-mail" autocomplete="email">
+      <input class="auth-input" type="password" id="authPass" placeholder="Senha (mín. 6 caracteres)" autocomplete="current-password">
+      <button class="auth-btn" id="authBtn" onclick="handleAuth()">Entrar</button>
+      <div class="auth-error" id="authErr"></div>
+      <div class="auth-toggle">
+        <span id="authToggleText">Não tem conta?</span> <a id="authToggleLink" onclick="toggleAuthMode()">Criar conta</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="loader" style="display:none">
   <div class="loader-name">Selecta</div>
   <div class="loader-track"><div class="loader-fill"></div></div>
 </div>
 
 <div class="app" id="app">
-  <aside class="sidebar">
-    <div class="logo">
-      <div class="logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
-      Selecta
-    </div>
-    <div class="nav-label">Menu</div>
-    <div class="nav-item active" onclick="setNav(this)"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Painel</div>
-    <div class="nav-item" onclick="setNav(this)"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>Jobs</div>
-    <div class="nav-item" onclick="setNav(this)"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Notas Fiscais</div>
-    <div class="nav-item" onclick="setNav(this)"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Estatísticas</div>
-    <div class="nav-label">Outros</div>
-    <div class="nav-item" onclick="setNav(this)"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Ajustes</div>
-    <div class="nav-spacer"></div>
-    <button class="panic-side" id="ps" onclick="togglePanic()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Modo Discreto</button>
-  </aside>
-
   <main class="main">
     <div class="header rv" data-d="0">
       <div class="brand"><h1 class="tr" data-d="200">Selecta</h1></div>
       <div style="display:flex;align-items:center;gap:10px">
+        <button class="auth-logout" onclick="handleLogout()" title="Sair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sair</button>
         <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Alternar tema"></div>
         <button class="btn-w" onclick="openModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Adicionar Job</span></button>
       </div>
@@ -550,25 +554,142 @@
 </div>
 
 <script>
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  🔑 SUPABASE CONFIG — Substitua pelos seus valores          ║
+// ║  Encontre em: Supabase Dashboard → Settings → API           ║
+// ╚══════════════════════════════════════════════════════════════╝
+const SUPABASE_URL  = 'https://SEU-PROJETO.supabase.co';   // ← sua URL aqui
+const SUPABASE_ANON = 'sua-anon-key-aqui';                  // ← sua anon key aqui
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ===== STATE =====
 const aC=['#C9A96E','#6E6D69','#A8A7A3','#787572','#E06C75','#5DD39E','#D4AF37','#EDEDEC'];
+let jobs=[];
+let curF='all',editId=null,cfmCb=null,currentUser=null;
 
-// ===== LOCAL STORAGE PERSISTENCE =====
-function loadData(){
+const $=s=>document.getElementById(s);
+const fmt=v=>'R$ '+v.toLocaleString('pt-BR');
+const fmtD=d=>{const t=new Date(d+'T12:00:00');return t.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})};
+const gC=n=>{let h=0;for(let i=0;i<n.length;i++)h=n.charCodeAt(i)+((h<<5)-h);return aC[Math.abs(h)%aC.length]};
+const gI=n=>n.charAt(0).toUpperCase();
+function maskCPF(el){let v=el.value.replace(/\D/g,'');if(v.length>11)v=v.slice(0,11);if(v.length>9)v=v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');else if(v.length>6)v=v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');else if(v.length>3)v=v.replace(/(\d{3})(\d{1,3})/,'$1.$2');el.value=v}
+
+// ===== AUTH =====
+let authMode='login'; // 'login' | 'signup'
+
+function toggleAuthMode(){
+  authMode=authMode==='login'?'signup':'login';
+  $('authBtn').textContent=authMode==='login'?'Entrar':'Criar Conta';
+  $('authToggleText').textContent=authMode==='login'?'Não tem conta?':'Já tem conta?';
+  $('authToggleLink').textContent=authMode==='login'?'Criar conta':'Entrar';
+  $('authPass').placeholder=authMode==='signup'?'Senha (mín. 6 caracteres)':'Senha';
+  $('authErr').textContent='';
+}
+
+async function handleAuth(){
+  const email=$('authEmail').value.trim();
+  const pass=$('authPass').value;
+  $('authErr').textContent='';
+  $('authBtn').disabled=true;
+  $('authBtn').textContent='Aguarde...';
+
   try{
-    const d=localStorage.getItem('selecta_jobs');
-    if(d){const parsed=JSON.parse(d);if(Array.isArray(parsed))return parsed}
-  }catch(e){}
-  return[];
-}
-function saveData(){
-  try{localStorage.setItem('selecta_jobs',JSON.stringify(jobs));localStorage.setItem('selecta_nextId',nxId)}catch(e){}
-}
-function loadNextId(){
-  try{const n=localStorage.getItem('selecta_nextId');return n?parseInt(n):1}catch(e){return 1}
+    let result;
+    if(authMode==='login'){
+      result=await supabase.auth.signInWithPassword({email,password:pass});
+    }else{
+      result=await supabase.auth.signUp({email,password:pass});
+    }
+
+    if(result.error) throw result.error;
+
+    if(authMode==='signup' && result.data?.user?.identities?.length===0){
+      $('authErr').textContent='E-mail já cadastrado. Tente fazer login.';
+    } else if(authMode==='signup'){
+      $('authErr').style.color='var(--green)';
+      $('authErr').textContent='Conta criada! Verifique seu e-mail para confirmar.';
+    }
+    // If login success, onAuthStateChange will handle the rest
+  }catch(e){
+    const msgs={'Invalid login credentials':'E-mail ou senha incorretos','User already registered':'E-mail já cadastrado','Password should be at least 6 characters':'Senha deve ter no mínimo 6 caracteres','Unable to validate email address: invalid format':'E-mail inválido'};
+    $('authErr').style.color='var(--red)';
+    $('authErr').textContent=msgs[e.message]||e.message||'Erro ao autenticar';
+  }
+
+  $('authBtn').disabled=false;
+  $('authBtn').textContent=authMode==='login'?'Entrar':'Criar Conta';
 }
 
-let jobs=loadData();
-let nxId=loadNextId(),curF='all',editId=null,cfmCb=null;
+async function handleLogout(){
+  await supabase.auth.signOut();
+  jobs=[];
+  currentUser=null;
+  $('authScreen').classList.remove('hidden');
+  $('app').classList.remove('on');
+  $('loader').style.display='none';
+}
+
+// Enter key on auth form
+document.addEventListener('keydown',e=>{
+  if(!$('authScreen').classList.contains('hidden')&&e.key==='Enter')handleAuth();
+});
+
+// ===== SUPABASE DATA =====
+async function loadJobsFromDB(){
+  if(!currentUser)return;
+  const{data,error}=await supabase
+    .from('jobs')
+    .select('*')
+    .eq('user_id',currentUser.id)
+    .order('date',{ascending:false});
+  if(error){console.error('Load error:',error);return}
+  // Map DB columns to front-end format
+  jobs=(data||[]).map(j=>({
+    id:j.id,
+    date:j.date,
+    client:j.client,
+    cpf:j.cpf||'',
+    amount:j.amount,
+    nf:j.nf
+  }));
+  renderAll();
+}
+
+async function insertJob(jobData){
+  const{data,error}=await supabase
+    .from('jobs')
+    .insert({
+      user_id: currentUser.id,
+      date: jobData.date,
+      client: jobData.client,
+      cpf: jobData.cpf,
+      amount: jobData.amount,
+      nf: jobData.nf
+    })
+    .select()
+    .single();
+  if(error){console.error('Insert error:',error);showToast('delete','Erro ao salvar');return null}
+  return data;
+}
+
+async function updateJobInDB(id,updates){
+  const{error}=await supabase
+    .from('jobs')
+    .update(updates)
+    .eq('id',id)
+    .eq('user_id',currentUser.id);
+  if(error){console.error('Update error:',error);showToast('delete','Erro ao atualizar')}
+}
+
+async function deleteJobFromDB(id){
+  const{error}=await supabase
+    .from('jobs')
+    .delete()
+    .eq('id',id)
+    .eq('user_id',currentUser.id);
+  if(error){console.error('Delete error:',error);showToast('delete','Erro ao excluir')}
+}
 
 // ===== THEME =====
 function toggleTheme(){
@@ -578,14 +699,8 @@ function toggleTheme(){
   localStorage.setItem('selecta_theme',isLight?'light':'dark');
 }
 
-const $=s=>document.getElementById(s);
-const fmt=v=>'R$ '+v.toLocaleString('pt-BR');
-const fmtD=d=>{const t=new Date(d+'T12:00:00');return t.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})};
-const gC=n=>{let h=0;for(let i=0;i<n.length;i++)h=n.charCodeAt(i)+((h<<5)-h);return aC[Math.abs(h)%aC.length]};
-const gI=n=>n.charAt(0).toUpperCase();
-function maskCPF(el){let v=el.value.replace(/\D/g,'');if(v.length>11)v=v.slice(0,11);if(v.length>9)v=v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');else if(v.length>6)v=v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');else if(v.length>3)v=v.replace(/(\d{3})(\d{1,3})/,'$1.$2');el.value=v}
-
-function gFilt(){if(curF==='pending')return jobs.filter(j=>!j.nf);if(curF==='month')return jobs.filter(j=>j.date.startsWith('2025-02'));return jobs}
+// ===== FILTERS & RENDER =====
+function gFilt(){if(curF==='pending')return jobs.filter(j=>!j.nf);if(curF==='month'){const now=new Date();const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');return jobs.filter(j=>j.date.startsWith(ym))}return jobs}
 function flt(f,btn){curF=f;document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderAll()}
 
 function renderAll(){renderTbl();renderMob();upMet()}
@@ -627,12 +742,10 @@ function upMet(){
   if($('ticketMed'))$('ticketMed').textContent=' R$ '+ticket.toLocaleString('pt-BR');
   $('pendC').textContent=pending;
 
-  // Update hero badges
   const badges=document.querySelectorAll('.hb-val');
   if(badges[0])badges[0].textContent=fmt(liq);
   if(badges[1])badges[1].textContent=fmt(imp);
 
-  // Economy counter
   const ecoEl=$('totalEco');
   if(ecoEl.dataset.animated){
     const current=parseInt(ecoEl.textContent.replace(/\D/g,''))||0;
@@ -643,34 +756,27 @@ function upMet(){
     }
   }
   ecoEl.dataset.target=eco;
-
-  // Economy percentage
   if($('ecoPct'))$('ecoPct').textContent=t>0?'↑ 21,5%':'—';
 }
 
-function animateCounter(el, target, duration){
-  const start=0;
-  const startTime=performance.now();
+function animateCounter(el,target,duration){
+  const start=0;const startTime=performance.now();
   el.dataset.animated='1';
   function tick(now){
-    const elapsed=now-startTime;
-    const progress=Math.min(elapsed/duration,1);
-    // easeOutExpo
+    const elapsed=now-startTime;const progress=Math.min(elapsed/duration,1);
     const eased=progress===1?1:1-Math.pow(2,-10*progress);
-    const current=Math.round(start+(target-start)*eased);
-    el.textContent=fmt(current);
-    if(progress<1) requestAnimationFrame(tick);
+    el.textContent=fmt(Math.round(start+(target-start)*eased));
+    if(progress<1)requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
 }
 
 function openPDF(){
-  // Generate a simple instruction PDF in a new tab
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Instruções NF</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,-apple-system,sans-serif;background:#09090B;color:#EDEDEC;padding:48px;max-width:680px;margin:0 auto;line-height:1.7}h1{font-size:24px;font-weight:600;letter-spacing:-2px;margin-bottom:8px}h2{font-size:16px;font-weight:600;letter-spacing:-1px;margin-top:32px;margin-bottom:12px;color:#C9A96E}.sub{font-size:14px;color:#A8A7A3;margin-bottom:32px}.step{background:#151517;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px 24px;margin-bottom:12px}.step-n{font-size:12px;color:#C9A96E;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:6px}.step-t{font-size:14px;color:#EDEDEC}.step-d{font-size:13px;color:#6E6D69;margin-top:4px}.note{background:rgba(201,169,110,.06);border:1px solid rgba(201,169,110,.16);border-radius:14px;padding:20px 24px;margin-top:32px;font-size:13px;color:#A8A7A3}@media print{body{background:#fff;color:#111}.step{border-color:#ddd}.note{background:#f9f6f0;border-color:#e8dcc8}}</style></head><body><h1>Como Emitir sua Nota Fiscal</h1><p class="sub">Guia rápido para emissão via Portal Nacional NFS-e</p><h2>Passo a Passo</h2><div class="step"><div class="step-n">Passo 1</div><div class="step-t">Acesse o Portal Nacional NFS-e</div><div class="step-d">Entre em nfse.gov.br com seu certificado digital ou gov.br.</div></div><div class="step"><div class="step-n">Passo 2</div><div class="step-t">Selecione "Emitir NFS-e"</div><div class="step-d">No menu principal, clique em Emitir NFS-e e preencha os dados do tomador (cliente).</div></div><div class="step"><div class="step-n">Passo 3</div><div class="step-t">Preencha os dados do serviço</div><div class="step-d">Informe o CNAE, descrição do serviço prestado e o valor. Use o código de serviço adequado à sua atividade.</div></div><div class="step"><div class="step-n">Passo 4</div><div class="step-t">Revise e emita</div><div class="step-d">Confira todos os dados, especialmente CPF do cliente e valor. Clique em Emitir. O PDF será gerado automaticamente.</div></div><div class="step"><div class="step-n">Passo 5</div><div class="step-t">Registre no Selecta</div><div class="step-d">Volte ao dashboard e marque o job correspondente como "NF Emitida" clicando no ícone de documento na tabela.</div></div><div class="note"><strong>💡 Dica:</strong> Mantenha seu certificado digital sempre atualizado e emita a NF em até 5 dias úteis após a prestação do serviço para evitar multas.</div></body></html>`;
-  const w=window.open('','_blank');
-  w.document.write(html);w.document.close();
+  const w=window.open('','_blank');w.document.write(html);w.document.close();
 }
 
+// ===== MODAL & CRUD =====
 function openModal(id){
   editId=id||null;
   if(editId){const j=jobs.find(x=>x.id===editId);if(!j)return;$('mTitle').textContent='Editar Job';$('jV').value=j.amount;$('jD').value=j.date;$('jC').value=j.client;$('jCPF').value=j.cpf||'';$('jNF').checked=j.nf;upCbV(j.nf)}
@@ -680,16 +786,29 @@ function openModal(id){
 function closeModal(){$('modal').classList.remove('on');editId=null}
 function editJob(id){openModal(id)}
 
-function saveJob(){
+async function saveJob(){
   const v=parseInt($('jV').value.replace(/[^\d]/g,''))||0;
   const c=$('jC').value.trim()||'Sem nome';
   const cpf=$('jCPF').value.trim();
   const d=$('jD').value||new Date().toISOString().split('T')[0];
   const nf=$('jNF').checked;
   if(v<=0){$('jV').focus();return}
-  if(editId){const i=jobs.findIndex(x=>x.id===editId);if(i!==-1)jobs[i]={...jobs[i],amount:v,client:c,cpf,date:d,nf};showToast('success','Job atualizado')}
-  else{jobs.unshift({id:nxId++,date:d,client:c,cpf,amount:v,nf});showToast('success','Job registrado')}
-  saveData();renderAll();closeModal();
+
+  if(editId){
+    // Update existing
+    await updateJobInDB(editId,{amount:v,client:c,cpf,date:d,nf});
+    const i=jobs.findIndex(x=>x.id===editId);
+    if(i!==-1)jobs[i]={...jobs[i],amount:v,client:c,cpf,date:d,nf};
+    showToast('success','Job atualizado');
+  }else{
+    // Insert new
+    const inserted=await insertJob({date:d,client:c,cpf,amount:v,nf});
+    if(inserted){
+      jobs.unshift({id:inserted.id,date:d,client:c,cpf,amount:v,nf});
+      showToast('success','Job registrado');
+    }
+  }
+  renderAll();closeModal();
 }
 
 function cfmNF(id){
@@ -697,7 +816,10 @@ function cfmNF(id){
   $('ciI').className='ci cnf';$('ciI').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
   $('cfT').textContent='Emitir Nota Fiscal';$('cfM').textContent=`Confirmar NF para ${j.client} — ${fmt(j.amount)}?`;
   $('cfA').className='btn-w';$('cfA').textContent='Emitir NF';
-  cfmCb=()=>{j.nf=true;saveData();renderAll();showToast('nf','NF emitida para '+j.client)};
+  cfmCb=async()=>{
+    await updateJobInDB(id,{nf:true});
+    j.nf=true;renderAll();showToast('nf','NF emitida para '+j.client);
+  };
   $('cov').classList.add('on');
 }
 
@@ -706,11 +828,14 @@ function cfmDel(id){
   $('ciI').className='ci cdel';$('ciI').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>';
   $('cfT').textContent='Excluir Job';$('cfM').textContent=`Remover ${j.client} (${fmt(j.amount)})? Não pode ser desfeito.`;
   $('cfA').className='btn-danger';$('cfA').textContent='Excluir';
-  cfmCb=()=>{jobs=jobs.filter(x=>x.id!==id);saveData();renderAll();showToast('delete','Job removido')};
+  cfmCb=async()=>{
+    await deleteJobFromDB(id);
+    jobs=jobs.filter(x=>x.id!==id);renderAll();showToast('delete','Job removido');
+  };
   $('cov').classList.add('on');
 }
 
-function exeCfm(){if(cfmCb)cfmCb();closeCfm()}
+async function exeCfm(){if(cfmCb)await cfmCb();closeCfm()}
 function closeCfm(){$('cov').classList.remove('on');cfmCb=null}
 
 function togCb(){const c=$('jNF');c.checked=!c.checked;upCbV(c.checked)}
@@ -730,15 +855,15 @@ function togglePanic(){
   panicOn=!panicOn;
   $('app').classList.toggle('pm',panicOn);
   $('pp')?.classList.toggle('on',panicOn);
-  $('ps')?.classList.toggle('on',panicOn);
   if(panicOn)showToast('success','Modo discreto ativado');
 }
 
 document.addEventListener('keydown',e=>{
+  if(!$('authScreen').classList.contains('hidden')){if(e.key==='Enter')handleAuth();return}
   if(e.key==='Escape'){if($('cov').classList.contains('on'))closeCfm();else if($('modal').classList.contains('on'))closeModal();else togglePanic()}
 });
 
-function setNav(el){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));el.classList.add('active')}
+function setNav(el){}
 
 let toastT;
 function showToast(type,msg){
@@ -749,8 +874,8 @@ function showToast(type,msg){
   clearTimeout(toastT);t.classList.add('show');toastT=setTimeout(()=>t.classList.remove('show'),3000);
 }
 
-// ===== BOOT SEQUENCE =====
-function boot(){
+// ===== BOOT =====
+function startDashboard(){
   const savedTheme=localStorage.getItem('selecta_theme');
   if(savedTheme==='light'){
     document.body.classList.add('light');
@@ -758,6 +883,8 @@ function boot(){
   }
 
   renderAll();
+
+  $('loader').style.display='flex';
   $('app').classList.add('on');
 
   setTimeout(()=>{
@@ -781,13 +908,31 @@ function triggerReveals(){
     const d=parseInt(el.dataset.d||0);
     setTimeout(()=>el.classList.add('vis'),d+200);
   });
-  // Fire counter animation on economy value
   const ecoEl=$('totalEco');
   const target=ecoEl.dataset.target!==undefined?parseInt(ecoEl.dataset.target):0;
   setTimeout(()=>animateCounter(ecoEl,target,1800),900);
 }
 
-boot();
+// ===== AUTH STATE LISTENER =====
+supabase.auth.onAuthStateChange(async(event,session)=>{
+  if(session?.user){
+    currentUser=session.user;
+    $('authScreen').classList.add('hidden');
+    await loadJobsFromDB();
+    startDashboard();
+  }else{
+    currentUser=null;
+    $('authScreen').classList.remove('hidden');
+  }
+});
+
+// Check existing session on load
+(async()=>{
+  const{data:{session}}=await supabase.auth.getSession();
+  if(!session){
+    // No session — show auth screen (already visible by default)
+  }
+})();
 </script>
 </body>
 </html>
