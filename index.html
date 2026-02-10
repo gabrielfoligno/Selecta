@@ -930,13 +930,24 @@ function triggerReveals(){
 
 // ===== AUTH STATE LISTENER =====
 sbClient.auth.onAuthStateChange(async(event,session)=>{
-  if(session?.user){
-    currentUser=session.user;
-    $('authScreen').classList.add('hidden');
-    await loadJobsFromDB();
-    startDashboard();
-  }else{
+  console.log('Auth event:',event,'Session:',!!session);
+  if(event==='SIGNED_IN' || event==='TOKEN_REFRESHED' || event==='INITIAL_SESSION'){
+    if(session?.user){
+      currentUser=session.user;
+      // Wait a tick for SDK to fully set the token internally
+      await new Promise(r=>setTimeout(r,100));
+      
+      // Verify token is set
+      const{data:check}=await sbClient.auth.getSession();
+      console.log('Token verified:',!!check?.session?.access_token);
+      
+      $('authScreen').classList.add('hidden');
+      await loadJobsFromDB();
+      startDashboard();
+    }
+  }else if(event==='SIGNED_OUT'){
     currentUser=null;
+    jobs=[];
     $('authScreen').classList.remove('hidden');
   }
 });
@@ -946,6 +957,7 @@ sbClient.auth.onAuthStateChange(async(event,session)=>{
   const{data:{session}}=await sbClient.auth.getSession();
   if(!session){
     // No session — show auth screen (already visible by default)
+    console.log('No existing session');
   }
 })();
 </script>
