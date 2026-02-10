@@ -660,15 +660,14 @@ async function loadJobsFromDB(){
 }
 
 async function insertJob(jobData){
-  // Ensure session is fresh
   const{data:sessionData}=await sbClient.auth.getSession();
   const session=sessionData?.session;
-  console.log('Session exists:',!!session);
-  console.log('Token preview:',session?.access_token?.substring(0,30));
+  console.log('INSERT - Session exists:',!!session);
+  console.log('INSERT - User ID:',currentUser?.id);
 
   if(!session){
-    showToast('delete','Sessão expirada. Faça login novamente.');
-    handleLogout();
+    console.error('No session found during insert');
+    showToast('delete','Sessão não encontrada. Tente recarregar.');
     return null;
   }
 
